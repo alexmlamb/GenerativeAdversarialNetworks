@@ -50,7 +50,7 @@ srng = theano.tensor.shared_randomstreams.RandomStreams(rng.randint(999999))
 #using 400/1200/10
 num_hidden_discriminator = 400
 num_hidden_generator = 1200
-var_dimensionality = 10
+var_dimensionality = 200
 
 #using 0.01
 scale_disc = 0.05
@@ -87,7 +87,7 @@ generator_params["b3_g"] = theano.shared(np.asarray(0.0 * np.random.normal(0, 1,
 #h = max(0.0, W1*z + b1)
 #x = W2 * h + b2
 def generator_network(z, params): 
-    z = T.erfinv(z) / 10.0
+    #z = T.erfinv(z)
     #using tanh
 
     h1 = relu(T.dot(z, params["W1_g"]) + params["b1_g"])
@@ -130,7 +130,15 @@ def discriminator_network(x, params, trainMode):
 
 learning_rate = T.scalar()
 x = T.matrix()
-z = T.matrix()
+#z = T.matrix()
+
+#z = srng.normal(avg = 0,std = 1, size = (100, var_dimensionality))
+z2 = srng.binomial(size = (100,var_dimensionality / 4), n = 1, p = 0.5, dtype = 'float32')
+z3 = srng.multinomial(size = (100,), n = 1, pvals = [1.0 / (var_dimensionality / 4)] * (var_dimensionality / 4), dtype = 'float32')
+z4 = srng.multinomial(size = (100,), n = 1, pvals = [1.0 / (var_dimensionality / 4)] * (var_dimensionality / 4), dtype = 'float32')
+z5 = srng.multinomial(size = (100,), n = 1, pvals = [1.0 / (var_dimensionality / 4)] * (var_dimensionality / 4), dtype = 'float32')
+
+z = T.concatenate([z2,z3,z4,z5], axis = 1)
 
 #z = T.erfinv(z)
 
@@ -152,13 +160,13 @@ generation_updates = Updates.Updates(paramMap = generator_params, loss = generat
 discriminator_updates = Updates.Updates(paramMap = discriminator_params, loss = discriminator_loss, learning_rate = learning_rate)
 
 
-train_discriminator = theano.function([x, z, learning_rate], outputs = [discriminator_sample, discriminator_loss], updates = discriminator_updates.getUpdates())
+train_discriminator = theano.function([x, learning_rate], outputs = [discriminator_sample, discriminator_loss], updates = discriminator_updates.getUpdates())
 #train_generator = theano.function([z, learning_rate], outputs = [generator, discriminator_sample, generation_loss], updates = generation_updates.getUpdates())
 
-train = theano.function([x,z,learning_rate], outputs = [generator, discriminator_sample, generation_loss, discriminator_loss], updates = dict(discriminator_updates.getUpdates().items() + generation_updates.getUpdates().items()))
+train = theano.function([x,learning_rate], outputs = [generator, discriminator_sample, generation_loss, discriminator_loss], updates = dict(discriminator_updates.getUpdates().items() + generation_updates.getUpdates().items()))
 
 test_discriminator = theano.function([x], outputs = [discriminator_true_value_test])
-test_generator = theano.function([z], outputs = [generator])
+test_generator = theano.function([], outputs = [generator])
 
 numIterations = 400
 
@@ -198,10 +206,10 @@ for i in range(0, numIterations):
 
             #was using 0.95
             if random.uniform(0,1) < 0.9:
-                disc_sample, dloss = train_discriminator(true_val_lst, rand_cdf_lst, learning_rate)
+                disc_sample, dloss = train_discriminator(true_val_lst, learning_rate)
                 totalDLoss += dloss
             else: 
-                generated_value, disc_sample, gloss, dloss = train(true_val_lst, rand_cdf_lst, learning_rate)
+                generated_value, disc_sample, gloss, dloss = train(true_val_lst, learning_rate)
                 totalDLoss += dloss
                 totalGLoss += gloss
 
@@ -241,14 +249,14 @@ for i in range(0, numIterations):
     #    continue
 
     #Plot every 5 epochs
-    if i % 5 != 0: 
+    if i % 15 != 0: 
         continue
 
     #plot samples
     samples = []
     for k in range(0, 5000):
         random_cdf = np.random.uniform(0,1,var_dimensionality)
-        predicted_q = test_generator(np.asarray([random_cdf], dtype = theano.config.floatX))[0]
+        predicted_q = test_generator()[0]
         samples.append(predicted_q[0][0])
 
     print max(samples)
