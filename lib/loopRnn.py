@@ -7,11 +7,22 @@ import LSTMLayer
 
 print "run"
 
-#Doing demo to study performance difference between for loop and LSTM on cpu.  Will also try gpu.  
+'''
+
+Build discriminator, generator.  Create sample sequences from multivariate normal distribution with linear trend.  Also consider using fresh demand?  First train to generate sequence without conditioning on part of sequence?  
+
+'''
 
 #Provide two methods.  One gets a network that takes an X sequence and outputs p(X).  
 def discriminator(X): 
 
+    lstm = LSTMLayer.LSTMLayer(inputSize = 1, controllerSize = 500, memorySize = 500, outputSize = 500, initialScale = 0.05)
+
+    h1 = T.matrix()
+    memory_0 = T.matrix()
+    controller_0 = T.matrix()
+
+    new_h_scan, _ = theano.scan(oneStep, sequences = [], outputs_info = [h1, memory_0, controller_0], n_steps = sequenceLength)
 
     return params, p_X
 
