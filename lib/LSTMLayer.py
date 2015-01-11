@@ -66,21 +66,27 @@ class LSTMLayer:
 
         self.W_output = theano.shared(numpy.asarray(reluScale * rng.normal(size = (outputSize, inputSize + memorySize + controllerSize)), dtype = theano.config.floatX), name = "output weights")
 
-        self.b_controller_0 = theano.shared(numpy.asarray(numpy.zeros(shape = controllerSize), dtype = theano.config.floatX))
-        self.b_controller_1 = theano.shared(numpy.asarray(numpy.zeros(shape = controllerSize), dtype = theano.config.floatX))
-        self.b_controller = theano.shared(numpy.asarray(numpy.zeros(shape = controllerSize), dtype = theano.config.floatX))
+        self.b_controller_0 = theano.shared(numpy.asarray(numpy.zeros(shape = controllerSize), dtype = theano.config.floatX), name = "b_controller_0")
+        self.b_controller_1 = theano.shared(numpy.asarray(numpy.zeros(shape = controllerSize), dtype = theano.config.floatX), name = "b_controller_1")
+        self.b_controller = theano.shared(numpy.asarray(numpy.zeros(shape = controllerSize), dtype = theano.config.floatX), name = "b_controller")
 
-        self.b_readgate = theano.shared(numpy.asarray(numpy.zeros(shape = readGateSize), dtype = theano.config.floatX))
+        self.b_readgate = theano.shared(numpy.asarray(numpy.zeros(shape = readGateSize), dtype = theano.config.floatX), name = "b_readgate")
 
-        self.b_readdelta = theano.shared(numpy.asarray(numpy.zeros(shape = readDeltaSize), dtype = theano.config.floatX))
+        self.b_readdelta = theano.shared(numpy.asarray(numpy.zeros(shape = readDeltaSize), dtype = theano.config.floatX), name = "b_readdelta")
 
-        self.b_writegate = theano.shared(numpy.asarray(writeGateInitialBias + numpy.zeros(shape = writeGateSize), dtype = theano.config.floatX))
+        self.b_writegate = theano.shared(numpy.asarray(writeGateInitialBias + numpy.zeros(shape = writeGateSize), dtype = theano.config.floatX), name = "b_writegate")
 
-        self.b_keepgate = theano.shared(numpy.asarray(numpy.zeros(shape = keepGateSize) + keepGateInitialBias, dtype = theano.config.floatX))
+        self.b_keepgate = theano.shared(numpy.asarray(numpy.zeros(shape = keepGateSize) + keepGateInitialBias, dtype = theano.config.floatX), name = "b_keepgate")
 
-        self.b_output = theano.shared(numpy.asarray(numpy.zeros(shape = outputSize), dtype = theano.config.floatX))
+        self.b_output = theano.shared(numpy.asarray(numpy.zeros(shape = outputSize), dtype = theano.config.floatX), name = "b_output")
 
-        self.params = [self.W_controller, self.W_readgate, self.W_readdelta, self.W_writegate, self.W_keepgate, self.W_output, self.b_controller, self.b_readgate, self.b_readdelta, self.b_writegate, self.b_keepgate, self.b_output]
+        paramLst = [self.W_controller, self.W_controller_0, self.W_controller_1, self.b_controller_1, self.b_controller_0, self.W_readgate, self.W_readdelta, self.W_writegate, self.W_keepgate, self.W_output, self.b_controller, self.b_readgate, self.b_readdelta, self.b_writegate, self.b_keepgate, self.b_output]
+
+        self.params = {}
+
+        for param in paramLst: 
+            self.params[param.name] = param
+        
 
     '''
         Returns new controller, new memory
