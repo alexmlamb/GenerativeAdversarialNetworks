@@ -21,6 +21,8 @@ class Updates:
         sqr_gradients = {}
         paramObjLst = paramMap.values()
 
+        obj2Grad = {}
+
         l2_loss = 0.0
 
         for param in paramObjLst:
@@ -33,12 +35,17 @@ class Updates:
 
             l2_loss += T.sum(param**2)
 
-        #loss += 0.0001 * l2_loss
+        gradLst = T.grad(loss, paramObjLst)
+
+        for i in range(0, len(paramObjLst)): 
+            obj2Grad[paramObjLst[i]] = gradLst[i]
 
         for param in paramObjLst:
             gparam = g_mom[param]
             sqr_grad = sqr_gradients[param]
-            new_gradient = T.grad(loss, param)
+            #new_gradient = T.grad(loss, param)
+
+            new_gradient = obj2Grad[param]
 
             scaling_factor  = T.maximum(1.0, (T.sqrt(T.sum(T.sqr(new_gradient)))))
             #Divide by the norm of the gradient if it is greater than one

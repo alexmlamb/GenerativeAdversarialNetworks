@@ -5,6 +5,7 @@ import sys
 import time
 import LSTMLayer
 import numpy as np
+import Updates
 
 print "run"
 
@@ -105,7 +106,11 @@ def generator(sequenceLength, batch_size, params):
 
 sys.setrecursionlimit(100000)
 
+def adversarial_loss_generator(p_x_generated): 
+    return 1.0 * T.sum(T.log(1.0 - p_x_generated))
 
+def adversarial_loss_discriminator(p_x_generated, p_x_observed): 
+    return 1.0 * (-1.0 * T.sum(T.log(p_x_observed)) - 1.0 * T.sum(T.log(1.0 - p_x_generated)))
 
 
 def test_gan_rnn(): 
@@ -132,19 +137,39 @@ def test_gan_rnn():
 
     loss_discriminator = adversarial_loss_discriminator(p_x_generated = p_x_generated, p_x_observed = p_x_observed)
 
-    #Generate loss, updates
+    learning_rate = 0.01
+
+    gen_updates = Updates.Updates(paramMap = params_gen, loss = loss_generator, learning_rate = learning_rate)
+    disc_updates = Updates.Updates(paramMap = params_disc, loss = loss_discriminator, learning_rate = learning_rate)
+
+    #Functions: 
+    #Train discriminator and generator
+    #Train only discriminator
+    #Generate values without training
 
     generate_sample = theano.function(inputs = [], outputs = [x_gen])
+    trainDiscriminator = theano.function(inputs = [X_observed], updates = disc_updates)
+    trainAll = theano.function(inputs = [X_observed], updates = gen_updates + disc_updates)
 
     g = generate_sample()
 
     print g[0].shape
 
-    sample_prob = theano.function(inputs = [X_observed], outputs = [p_x])
+    sample_prob = theano.function(inputs = [X_observed], outputs = [p_x_observed])
 
     sampled = sample_prob(g[0])
 
+    from DataTransformation.plotData import getData
 
+    dataLst = getData()
+
+    for ts in dataLst: 
+        if random.uniform(0,1) < 0.95: 
+            trainDiscriminator(ts)
+        else:         
+            trainAll(ts)
+
+        print sample_prob(ts)
 
     #Train in loop
 
