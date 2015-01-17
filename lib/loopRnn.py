@@ -6,6 +6,7 @@ import time
 import LSTMLayer
 import numpy as np
 import Updates
+import random
 
 print "run"
 
@@ -124,7 +125,7 @@ def test_gan_rnn():
     #Each sequence is either 1 or 0.  
     Y = T.vector()
 
-    sequenceLength = 20
+    sequenceLength = 10
     batch_size = 100
 
     #Discriminator on observed sample, discriminator on generated sample
@@ -137,7 +138,7 @@ def test_gan_rnn():
 
     loss_discriminator = adversarial_loss_discriminator(p_x_generated = p_x_generated, p_x_observed = p_x_observed)
 
-    learning_rate = 0.01
+    learning_rate = 0.1
 
     gen_updates = Updates.Updates(paramMap = params_gen, loss = loss_generator, learning_rate = learning_rate)
     disc_updates = Updates.Updates(paramMap = params_disc, loss = loss_discriminator, learning_rate = learning_rate)
@@ -147,9 +148,15 @@ def test_gan_rnn():
     #Train only discriminator
     #Generate values without training
 
+    print "disc update keys", len(disc_updates.getUpdates().keys())
+
+    print "gen update keys", len(gen_updates.getUpdates().keys())
+
+    print "joined update keys", len(dict(gen_updates.getUpdates().items() + disc_updates.getUpdates().items()))
+
     generate_sample = theano.function(inputs = [], outputs = [x_gen])
-    trainDiscriminator = theano.function(inputs = [X_observed], updates = disc_updates)
-    trainAll = theano.function(inputs = [X_observed], updates = gen_updates + disc_updates)
+    trainDiscriminator = theano.function(inputs = [X_observed], updates = disc_updates.getUpdates())
+    trainAll = theano.function(inputs = [X_observed], outputs = [loss_generator, loss_discriminator], updates = gen_updates.getUpdates())
 
     g = generate_sample()
 
@@ -161,21 +168,28 @@ def test_gan_rnn():
 
     from DataTransformation.plotData import getData
 
-    dataLst = getData()
 
-    for ts in dataLst: 
-        if random.uniform(0,1) < 0.95: 
-            trainDiscriminator(ts)
-        else:         
-            trainAll(ts)
+    for epoch in range(0, 200): 
+        dataLst = getData()
 
-        print sample_prob(ts)
+        #seq_length x batch x 1
 
-    #Train in loop
+        for ts in dataLst: 
+            if random.uniform(0,1) < 0.9: 
+                trainDiscriminator(ts)
+            else:         
+                loss_gen, loss_disc = trainAll(ts)
+                print "loss gen", loss_gen
+                print "loss disc", loss_disc
 
-    #Evaluate?
+            #print sample_prob(ts)
+            #print "sample", np.asarray(generate_sample()[0]).swapaxes(0,1)[0].tolist()
+            print "===================="
+            print ts[0][0]
+            print "sample_prob", sample_prob(ts)[0][0].tolist()
+            print "sample", np.asarray(generate_sample()[0]).swapaxes(0,1)[0].tolist()
+    
 
-    pass
 
 #Generate samples from two different distributions and see if discriminator can learn to separate them
 def test_discriminator_1(): 

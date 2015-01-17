@@ -43,7 +43,8 @@ class LSTMLayer:
         writeGateInitialBias = 2.0
 
         #All rectified linear unit hidden layers have this initial scale
-        reluScale = 0.01
+        reluScale = 0.05
+        initialScale = 0.05
 
         self.useReluReadGate = useReluReadGate
 
