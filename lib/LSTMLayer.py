@@ -35,7 +35,9 @@ class LSTMLayer:
         writeGateSize = outputSize
         keepGateSize = memorySize
 
-        scale = initialScale
+        scale = 0.01
+
+        #scale = initialScale
 
         #It is possible for the model to immediately enter a local minimum at the start of training in which the write gate or keep gate are closed for too
         #many memory modules, which prevents the model from learning long-range dependencies.  
@@ -43,7 +45,7 @@ class LSTMLayer:
         writeGateInitialBias = 2.0
 
         #All rectified linear unit hidden layers have this initial scale
-        reluScale = 0.05
+        reluScale = 0.01
         initialScale = 0.05
 
         self.useReluReadGate = useReluReadGate
@@ -58,8 +60,11 @@ class LSTMLayer:
 
             self.params["W_controller_0"] = theano.shared(numpy.asarray(scale * rng.normal(size = (inputSize, controllerSize)), dtype = theano.config.floatX), name = "Controller weights 0")
 
-            self.params["W_controller_1"] = theano.shared(numpy.asarray(scale * rng.normal(size = (controllerSize, controllerSize)), dtype = theano.config.floatX), name = "Controller weights 1")
-            self.params["W_controller"] = theano.shared(numpy.asarray(scale * rng.normal(size = (controllerSize, controllerSize)), dtype = theano.config.floatX), name = "Controller weights 2")
+            self.params["W_controller_1"] = theano.shared(numpy.asarray(scale * rng.normal(size = (controllerSize + inputSize, controllerSize)), dtype = theano.config.floatX), name = "Controller weights 1")
+
+
+            self.params["W_controller"] = theano.shared(numpy.asarray(scale * rng.normal(size = (controllerSize + inputSize, controllerSize)), dtype = theano.config.floatX), name = "Controller weights 2")
+
 
             self.params["W_readgate"] = theano.shared(numpy.asarray(readGateScale * rng.normal(size = (readGateSize, inputSize + 1 * controllerSize)), dtype = theano.config.floatX), name = "read gate weights")
 
@@ -103,9 +108,9 @@ class LSTMLayer:
 
         controller_0 = T.maximum(0.0, T.dot(input_layer, self.params["W_controller_0"]) + self.params["b_controller_0"])    
 
-        controller_1 = T.maximum(0.0, T.dot(controller_0, self.params["W_controller_1"]) + self.params["b_controller_1"])
+        controller_1 = T.maximum(0.0, T.dot(T.concatenate([controller_0, input_layer], axis = axisConcat), self.params["W_controller_1"]) + self.params["b_controller_1"])
 
-        controller = T.maximum(0.0, T.dot(controller_1, self.params["W_controller"]) + self.params["b_controller"])
+        controller = T.maximum(0.0, T.dot(T.concatenate([controller_1, input_layer], axis = axisConcat), self.params["W_controller"]) + self.params["b_controller"])
 
         #Have multiple layers in controller?  This determines what gets passed in / out from the network.  
 
@@ -122,7 +127,7 @@ class LSTMLayer:
 
         writegate = T.nnet.sigmoid(T.dot(T.concatenate([controller, input_layer], axis = axisConcat), self.params["W_writegate"].T) + self.params["b_writegate"])
 
-        output = writegate * T.maximum(0.0, T.dot(T.concatenate([controller, memory, input_layer], axis = axisConcat), self.params["W_output"].T) + self.params["b_output"])
+        output = writegate * T.maximum(0.0, T.dot(T.concatenate([controller, 0.0 * memory, 1.0 * input_layer], axis = axisConcat), self.params["W_output"].T) + self.params["b_output"])
 
         return memory, output
 

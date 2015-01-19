@@ -47,7 +47,7 @@ class Updates:
 
             new_gradient = obj2Grad[param]
 
-            scaling_factor  = T.maximum(1.0, (T.sqrt(T.sum(T.sqr(new_gradient)))))
+            scaling_factor  = 1.0 #T.maximum(1.0, (T.sqrt(T.sum(T.sqr(new_gradient)))))
             #Divide by the norm of the gradient if it is greater than one
             new_gradient = new_gradient / scaling_factor
 
@@ -55,7 +55,7 @@ class Updates:
 
             mom = 0.7
 
-            learning_rate_use = learning_rate / (T.sqrt(sqr_grad) + 1.0)
+            learning_rate_use = learning_rate# / (T.sqrt(sqr_grad) + 1.0)
 
             updates[gparam] = T.cast(mom * gparam - (1.0 - mom) * learning_rate_use * new_gradient, theano.config.floatX)
 
